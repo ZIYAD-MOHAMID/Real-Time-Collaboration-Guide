@@ -1,0 +1,12 @@
+FROM node:20-bullseye
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+# Copy websocket server files
+COPY server ./server
+
+EXPOSE 1234
+CMD ["node", "server/websocket.js"]

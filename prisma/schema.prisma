@@ -1,8 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "binary"
 }
 
 datasource db {
@@ -10,44 +8,65 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String           @id @default(uuid())
+  name      String?
+  email     String?          @unique
+  password  String?
+  emailVerified DateTime?        // <-- REQUIRED for OAuth
+  image         String?           // optional, used by Google
+  documents Document[]       @relation("OwnerDocuments")
+  access    DocumentAccess[]
+  accounts  Account[]
+  sessions  Session[]
+}
+
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id])
 
   @@unique([provider, providerAccountId])
 }
 
+model Document {
+  id        String           @id @default(uuid())
+  title     String
+  type      String
+  content   Bytes?
+  owner     User             @relation("OwnerDocuments", fields: [ownerId], references: [id])
+  ownerId   String
+  access    DocumentAccess[]
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model DocumentAccess {
+  userId     String
+  documentId String
+  permission String
+  user       User     @relation(fields: [userId], references: [id])
+  document   Document @relation(fields: [documentId], references: [id])
+
+  @@id([userId, documentId])
+}
+
 model Session {
-  id           String   @id @default(cuid())
+  id           String   @id @default(uuid())
   sessionToken String   @unique
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  accounts      Account[]
-  sessions      Session[]
-  documents     DocumentAccess[]
-  ownedDocuments Document[] @relation("DocumentOwner")
 }
 
 model VerificationToken {
@@ -56,30 +75,6 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-}
-
-model Document {
-  id          String   @id @default(cuid())
-  title       String
-  content     Bytes?   // Optional for creation, required for updates
-  type        String   // "planning", "drawing", "writing"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  ownerId     String
-  owner       User     @relation("DocumentOwner", fields: [ownerId], references: [id])
-  access      DocumentAccess[]
-}
-
-model DocumentAccess {
-  id           String         @id @default(cuid())
-  userId       String
-  documentId   String
-  permission   PermissionType
-  user         User           @relation(fields: [userId], references: [id])
-  document     Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  grantedAt    DateTime       @default(now())
-
-  @@unique([userId, documentId])
 }
 
 enum PermissionType {

@@ -18,80 +18,54 @@ export const handler = startServerAndCreateNextHandler(server, {
     console.log("Request headers:", req.headers);
     console.log("Request cookies:", req.cookies);
 
-    // Try to get token from multiple sources
-    let token = null;
     let session = null;
 
     try {
-      // Method 1: Try x-user-id header (our custom header)
-      if (req.headers?.["x-user-id"]) {
-        console.log("Found x-user-id header:", req.headers["x-user-id"]);
-        // Create a minimal session object
+      // 1️⃣ x-user-id header
+      const xUserId = req.headers?.["x-user-id"];
+      if (xUserId) {
         session = {
           user: {
-            id: req.headers["x-user-id"],
+            id: xUserId,
             email: "user@example.com",
             name: "User",
           },
         };
-        console.log("Created session from x-user-id:", session);
+        console.log("Session from x-user-id:", session);
       }
 
-      // Method 2: Try JWT token from cookies
+      // 2️⃣ next-auth.session-token cookie
       if (!session && req.cookies?.["next-auth.session-token"]) {
-        console.log(
-          "Found session token in cookies:",
-          req.cookies["next-auth.session-token"]
-        );
-        token = await getToken({
+        const token = await getToken({
           req,
           secret: process.env.NEXTAUTH_SECRET,
           cookieName: "next-auth.session-token",
         });
-        console.log("Token from cookies:", token);
-
         if (token) {
-          session = {
-            user: {
-              id: token.id,
-              email: token.email,
-              name: token.name,
-            },
-          };
+          session = { user: { id: token.id, email: token.email, name: token.name } };
+          console.log("Session from cookie token:", session);
         }
       }
 
-      // Method 3: Try authorization header
-      if (!session && req.headers?.authorization) {
-        const authHeader = req.headers.authorization;
-        console.log("Found auth header:", authHeader);
-        if (authHeader.startsWith("Bearer ")) {
-          token = await getToken({
-            req: {
-              ...req,
-              headers: {
-                ...req.headers,
-                cookie: `next-auth.session-token=${authHeader.substring(7)}`,
-              },
-            } as any,
-            secret: process.env.NEXTAUTH_SECRET,
-          });
-          console.log("Token from auth header:", token);
-
-          if (token) {
-            session = {
-              user: {
-                id: token.id,
-                email: token.email,
-                name: token.name,
-              },
-            };
-          }
+      // 3️⃣ Authorization header
+      if (!session && req.headers?.authorization?.startsWith("Bearer ")) {
+        const token = await getToken({
+          req: {
+            ...req,
+            headers: {
+              ...req.headers,
+              cookie: `next-auth.session-token=${req.headers.authorization.substring(7)}`,
+            },
+          } as any,
+          secret: process.env.NEXTAUTH_SECRET,
+        });
+        if (token) {
+          session = { user: { id: token.id, email: token.email, name: token.name } };
+          console.log("Session from auth header:", session);
         }
       }
 
       console.log("Final session:", session);
-      console.log("=== End Debug ===");
     } catch (error) {
       console.error("Session retrieval error:", error);
     }

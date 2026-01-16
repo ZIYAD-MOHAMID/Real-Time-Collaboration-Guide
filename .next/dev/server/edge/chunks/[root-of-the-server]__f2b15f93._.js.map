@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 16, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/middleware.ts"],"sourcesContent":["import { withAuth } from 'next-auth/middleware'\r\n\r\nexport default withAuth(\r\n  function middleware(req) {\r\n    // Add any additional middleware logic here\r\n    console.log('Middleware protecting:', req.nextUrl.pathname)\r\n  },\r\n  {\r\n    callbacks: {\r\n      authorized: ({ token }) => {\r\n        console.log('Token in middleware:', token)\r\n        return !!token\r\n      }\r\n    },\r\n  }\r\n)\r\n\r\nexport const config = {\r\n  matcher: ['/dashboard/:path*', '/api/graphql/:path*']\r\n}\r\n"],"names":[],"mappings":";;;;;;AAAA;;uCAEe,IAAA,8JAAQ,EACrB,SAAS,WAAW,GAAG;IACrB,2CAA2C;IAC3C,QAAQ,GAAG,CAAC,0BAA0B,IAAI,OAAO,CAAC,QAAQ;AAC5D,GACA;IACE,WAAW;QACT,YAAY,CAAC,EAAE,KAAK,EAAE;YACpB,QAAQ,GAAG,CAAC,wBAAwB;YACpC,OAAO,CAAC,CAAC;QACX;IACF;AACF;AAGK,MAAM,SAAS;IACpB,SAAS;QAAC;QAAqB;KAAsB;AACvD"}}]
-}

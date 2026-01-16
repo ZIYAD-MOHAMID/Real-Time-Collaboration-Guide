@@ -57,6 +57,7 @@ const schemaSDL = `
   type Subscription {
     documentUpdated(documentId: String!): Document!
     documentShared(documentId: String!): DocumentAccess!
+    activeUsers(documentId: String!): [String!]!
   }
 
   scalar DateTime

@@ -6,6 +6,7 @@ const nextConfig = {
       '@': './src',
     }
   },
+  output: 'standalone', 
 }
 
 export default nextConfig

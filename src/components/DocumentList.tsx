@@ -475,7 +475,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 p-6">
         {documents?.length === 0 ? (
           <div className="text-center py-16">
             <div className="w-24 h-24 bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
@@ -524,96 +524,100 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
             )}
           </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-4 grid-cols-1 ">
             {documents?.map((doc: any) => (
               <Card
                 key={doc.id}
-                className="group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] border-0 bg-white dark:bg-slate-800 shadow-lg"
+                className="w-full group cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] border-0 bg-white dark:bg-slate-800 shadow-lg"
                 onClick={() => onDocumentSelect(doc.id, doc.type)}
               >
-                <CardContent className="p-3">
+                <CardContent className="p-3 flex flex-col">
                   <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="text-3xl p-3 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 shadow-inner">
-                          {getDocumentIcon(doc.type)}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-lg text-slate-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                            {doc.title}
-                          </h3>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <span
-                              className={`text-xs px-3 py-1 rounded-full font-medium shadow-sm ${getDocumentColor(
-                                doc.type
-                              )}`}
-                            >
-                              {doc.type}
+                    {/* Left: Icon + Title */}
+                    <div className="flex-1 min-w-0 flex items-center space-x-3 mb-3">
+                      <div className="text-3xl p-3 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 shadow-inner">
+                        {getDocumentIcon(doc.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3
+                          className="truncate font-semibold text-lg text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                          title={doc.title}
+                        >
+                          {doc.title}
+                        </h3>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span
+                            className={`text-xs px-3 py-1 rounded-full font-medium shadow-sm ${getDocumentColor(
+                              doc.type
+                            )}`}
+                          >
+                            {doc.type}
+                          </span>
+                          {activeTab === "shared" && (
+                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                              by {doc.owner.name || doc.owner.email}
                             </span>
-                            {activeTab === "shared" && (
-                              <span className="text-xs text-slate-500 dark:text-slate-400">
-                                by {doc.owner.name || doc.owner.email}
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      {activeTab === "my" && (
-                        <>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleShareDocument(doc.id, doc.title);
-                            }}
-                            className="opacity-75 hover:opacity-100 transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg p-2"
-                            title="Share document"
+                    {/* Right section: action buttons */}
+                    {activeTab === "my" && (
+                      <div className="flex items-center space-x-2 ml-4 flex-shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareDocument(doc.id, doc.title);
+                          }}
+                          className="opacity-75 hover:opacity-100 transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg p-2"
+                          title="Share document"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8.684 13.342C8.886 12.938 9 12.5 9 12c0-.5-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.732 2.684 3 3 0 004.732-2.684zm0 0a3 3 0 00-4.732-2.684 3 3 0 004.732 2.684z"
-                              />
-                            </svg>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteDocument(doc.id, doc.title);
-                            }}
-                            className="opacity-75 hover:opacity-100 transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg p-2"
-                            title="Delete document"
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M8.684 13.342C8.886 12.938 9 12.5 9 12c0-.5-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m9.032 4.026a3 3 0 10-4.732 2.684 3 3 0 004.732-2.684zm0 0a3 3 0 00-4.732-2.684 3 3 0 004.732 2.684z"
+                            />
+                          </svg>
+                        </Button>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteDocument(doc.id, doc.title);
+                          }}
+                          className="opacity-75 hover:opacity-100 transition-all duration-200 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg p-2"
+                          title="Delete document"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                           >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </Button>
-                        </>
-                      )}
-                    </div>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </Button>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Bottom info */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
                       <span className="flex items-center gap-1">
@@ -632,6 +636,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                         </svg>
                         {formatDate(doc.updatedAt)}
                       </span>
+
                       {doc.access?.length > 0 && (
                         <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                           <svg

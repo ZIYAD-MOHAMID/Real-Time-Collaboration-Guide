@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { DocumentList } from "@/components/DocumentList";
-import { DocumentEditor } from "@/components/DocumentEditor";
+import DocumentEditor from "@/components/DocumentEditor";
 import { ApolloClient, InMemoryCache, HttpLink } from "@apollo/client";
 import { ApolloProvider } from "@apollo/client/react";
 import { Button } from "@/components/ui/Button";
@@ -106,7 +106,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="flex flex-1">
-              <div className="w-80 border-r bg-muted/0">
+              <div className="w-96 border-r bg-muted/0">
                 <DocumentList onDocumentSelect={handleDocumentSelect} />
               </div>
               <div className="flex-1 flex items-center justify-center p-8">

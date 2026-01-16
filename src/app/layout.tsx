@@ -7,7 +7,7 @@ export const metadata = {
   title: "نرسم مع بعض",
   description:
     "تطبيق نرسم مع بعض للرسم التعاوني عبر الإنترنت والتخطيط المتين جدا جدا جدا",
-  icons: [{ rel: "png", url: "/src/app/art.png" }],
+  icons: [{ rel: "icon", url: "/art.png" }],
 };
 
 export default function RootLayout({

@@ -1,5 +1,7 @@
 "use client";
+export const dynamic = "force-dynamic"; 
 
+import { Suspense } from "react";
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,7 +16,7 @@ import {
   CardTitle,
 } from "@/components/ui/Card";
 
-export default function SignIn() {
+function SignInContent() {
   const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,13 +25,14 @@ export default function SignIn() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Redirect authenticated users to dashboard
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
   useEffect(() => {
     if (status === "loading") return;
     if (session) {
-      router.push("/dashboard");
+      router.push(callbackUrl);
     }
-  }, [session, status, router]);
+  }, [session, status, router, callbackUrl]);
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
@@ -50,17 +53,26 @@ export default function SignIn() {
         case "EmailCreateAccount":
           setError("Error creating email account.");
           break;
-        case "Callback":
-          setError("Authentication callback error.");
-          break;
         case "OAuthAccountNotLinked":
           setError("Email already exists with different provider.");
           break;
         case "SessionRequired":
           setError("Please sign in to access this page.");
           break;
-        default:
+        case "Configuration":
+          setError("Authentication configuration error.");
+          break;
+        case "AccessDenied":
+          setError("Access denied. You do not have permission to sign in.");
+          break;
+        case "Verification":
+          setError("Email verification required.");
+          break;
+        case "Default":
           setError("Authentication error. Please try again.");
+          break;
+        default:
+          setError("An unknown error occurred during authentication.");
       }
     }
   }, [searchParams]);
@@ -80,7 +92,7 @@ export default function SignIn() {
       if (result?.error) {
         setError("Invalid credentials");
       } else {
-        router.push("/dashboard");
+        router.push(callbackUrl);
       }
     } catch (error) {
       setError("An error occurred");
@@ -90,82 +102,69 @@ export default function SignIn() {
   };
 
   const handleGoogleSignIn = () => {
-    setError("");
-    signIn("google", { callbackUrl: "/dashboard" });
+    signIn("google", { callbackUrl });
   };
 
-  // Show loading while checking authentication
   if (status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Checking authentication...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
-  // Don't render sign-in form if already authenticated
-  if (session) {
-    return null; // Will redirect via useEffect
+  if (status === "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Redirecting...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">Sign In</CardTitle>
           <CardDescription>
-            Enter your credentials to access your collaborative workspace
+            Enter your credentials to access your account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-md">
-              {error}
-            </div>
-          )}
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Email
-              </label>
               <Input
-                id="email"
                 type="email"
-                placeholder="Enter your email"
+                placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
               />
             </div>
-
             <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Password
-              </label>
               <Input
-                id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
               />
             </div>
-
+            {error && (
+              <div className="text-sm text-destructive text-center">
+                {error}
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Signing in..." : "Sign in"}
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 
@@ -182,8 +181,9 @@ export default function SignIn() {
 
           <Button
             variant="outline"
-            onClick={handleGoogleSignIn}
             className="w-full"
+            onClick={handleGoogleSignIn}
+            type="button"
           >
             <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
               <path
@@ -203,17 +203,32 @@ export default function SignIn() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            Google
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+          <div className="text-center text-sm">
             <Link href="/auth/signup" className="text-primary hover:underline">
-              Sign up
+              Don't have an account? Sign up
             </Link>
-          </p>
+          </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Loading...</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   );
 }
