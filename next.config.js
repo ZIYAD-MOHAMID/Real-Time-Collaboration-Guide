@@ -1,12 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['@prisma/client', 'prisma'],
+  reactStrictMode: false,
+  serverExternalPackages: ["@prisma/client", "prisma"],
   turbopack: {
     resolveAlias: {
-      '@': './src',
-    }
+      "@": "./src",
+    },
   },
-  output: 'standalone', 
-}
+  output: "standalone",
+};
 
-export default nextConfig
+export default nextConfig;

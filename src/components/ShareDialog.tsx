@@ -91,7 +91,7 @@ export function ShareDialog({
   const { data: session } = useSession();
   const [email, setEmail] = useState("");
   const [permission, setPermission] = useState<"VIEWER" | "EDITOR" | "ADMIN">(
-    "EDITOR"
+    "EDITOR",
   );
   const [shareResults, setShareResults] = useState<ShareDocumentResponse[]>([]);
   const [isSharing, setIsSharing] = useState(false);
@@ -108,7 +108,6 @@ export function ShareDialog({
       setSuccessMessage("");
     }
   }, [documentId, isOpen]);
-
   const client = React.useMemo(
     () =>
       new ApolloClient({
@@ -123,7 +122,7 @@ export function ShareDialog({
         }),
         cache: new InMemoryCache(),
       }),
-    [session?.user?.id]
+    [session?.user?.id],
   );
   const { data: accessData, loading: loadingAccess } = useQuery<{
     document: { access: ShareDocumentResponse[] };
@@ -142,16 +141,15 @@ export function ShareDialog({
 
   const [shareDocument] = useMutation<ShareDocumentData>(
     SHARE_DOCUMENT_MUTATION,
-    { client }
+    { client },
   );
-  const [removeAccess] = useMutation(REMOVE_ACCESS_MUTATION, { client });
-
   const handleShare = async () => {
     if (!email.trim()) return;
 
     // 1. Check if the user is already in the list (case-insensitive email check)
     const existingAccess = shareResults.find(
-      (result) => result.user.email.toLowerCase() === email.trim().toLowerCase()
+      (result) =>
+        result.user.email.toLowerCase() === email.trim().toLowerCase(),
     );
 
     // If the user already exists, we must stop and prompt the user to update their permission instead.
@@ -167,7 +165,7 @@ export function ShareDialog({
       // Option B: User is already shared, but with a different permission.
       // Show an error/suggestion to the user.
       setSuccessMessage(
-        `Failed: ${email} already has ${existingAccess.permission} access. Use the list below to manage permissions.`
+        `Failed: ${email} already has ${existingAccess.permission} access. Use the list below to manage permissions.`,
       );
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 5000);
@@ -208,48 +206,33 @@ export function ShareDialog({
       setIsSharing(false);
     }
   };
-
-  const handleRemoveAccess = async (userId: string) => {
-    console.log(userId);
-
+  const [removeAccess] = useMutation(REMOVE_ACCESS_MUTATION, { client });
+  const [isRevoking, setIsRevoking] = useState<string | null>(null); // Track which user is being removed
+  const handleRemoveAccess = async (targetUserId: string) => {
+    setIsRevoking(targetUserId); // Start loading spinner for this user
     try {
       await removeAccess({
         variables: {
           documentId,
-          userId,
+          userId: targetUserId,
         },
       });
-      setShareResults(shareResults.filter((r) => r.user.id !== userId));
-      setSuccessMessage("Access removed successfully");
+
+      // Optimistic UI update: Remove the user from the list immediately
+      setShareResults((prev) => prev.filter((r) => r.user.id !== targetUserId));
+
+      setSuccessMessage("Access revoked and user notified.");
       setShowSuccess(true);
 
-      // Call refresh callback if provided
-      if (onShareComplete) {
-        onShareComplete();
-      }
-
-      setTimeout(() => setShowSuccess(false), 3000);
+      if (onShareComplete) onShareComplete();
     } catch (error: any) {
-      // Log the ENTIRE error object for detailed inspection
       console.error("Error removing access:", error);
-
-      // Log specific details often found in Apollo Client errors
-      if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-        console.error("GraphQL Errors:", error.graphQLErrors);
-        // If you see errors here, the server is confirming the failure (e.g., 'Permission Denied')
-        setSuccessMessage(
-          error.graphQLErrors[0].message ||
-            "Failed to remove access (Permission Denied)"
-        );
-      } else if (error.networkError) {
-        console.error("Network Error:", error.networkError);
-        // If you see a network error here, the server is unreachable
-        setSuccessMessage("Failed to remove access (Network Error)");
-      } else {
-        setSuccessMessage("Failed to remove access");
-      }
-
+      setSuccessMessage(
+        error.graphQLErrors?.[0]?.message || "Failed to remove access",
+      );
       setShowSuccess(true);
+    } finally {
+      setIsRevoking(null); // Stop loading
       setTimeout(() => setShowSuccess(false), 3000);
     }
   };
@@ -266,7 +249,6 @@ export function ShareDialog({
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
-
   const getPermissionIcon = (perm: string) => {
     switch (perm) {
       case "ADMIN":
@@ -279,7 +261,6 @@ export function ShareDialog({
         return "👤";
     }
   };
-
   const getPermissionDescription = (perm: string) => {
     switch (perm) {
       case "ADMIN":
@@ -292,9 +273,7 @@ export function ShareDialog({
         return "Unknown permission";
     }
   };
-
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
@@ -463,7 +442,7 @@ export function ShareDialog({
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                    Current Collaborators ({shareResults.length})
+                    Current Collaborators ({shareResults.length - 1})
                   </h4>
                   <div className="text-xs text-slate-500 dark:text-slate-400">
                     Click × to remove access
@@ -471,63 +450,65 @@ export function ShareDialog({
                 </div>
 
                 <div className="space-y-3">
-                  {shareResults.map((result, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-200"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
-                          {result.user.name?.[0] ||
-                            result.user.email?.[0] ||
-                            "U"}
-                        </div>
-                        <div>
-                          <div className="text-sm font-semibold text-slate-900 dark:text-white">
-                            {result.user.name || result.user.email}
+                  {shareResults
+                    .filter((result) => result.user.id !== session?.user?.id)
+                    .map((result, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg">
+                            {result.user.name?.[0] ||
+                              result.user.email?.[0] ||
+                              "U"}
                           </div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">
-                            {result.user.email}
+                          <div>
+                            <div className="text-sm font-semibold text-slate-900 dark:text-white">
+                              {result.user.name || result.user.email}
+                            </div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                              {result.user.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center space-x-3">
-                        <span
-                          className={`text-xs px-3 py-1.5 rounded-full font-medium border ${getPermissionColor(
-                            result.permission
-                          )}`}
-                        >
-                          <span className="mr-1">
-                            {getPermissionIcon(result.permission)}
-                          </span>
-                          {result.permission}
-                        </span>
-
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveAccess(result.user.id)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg p-2 transition-all duration-200"
-                          title="Remove access"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                        <div className="flex items-center space-x-3">
+                          <span
+                            className={`text-xs px-3 py-1.5 rounded-full font-medium border ${getPermissionColor(
+                              result.permission,
+                            )}`}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </Button>
+                            <span className="mr-1">
+                              {getPermissionIcon(result.permission)}
+                            </span>
+                            {result.permission}
+                          </span>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveAccess(result.user.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg p-2 transition-all duration-200"
+                            title="Remove access"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               </div>
             )

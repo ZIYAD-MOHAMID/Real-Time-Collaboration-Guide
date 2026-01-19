@@ -9,16 +9,16 @@ datasource db {
 }
 
 model User {
-  id        String           @id @default(uuid())
-  name      String?
-  email     String?          @unique
-  password  String?
-  emailVerified DateTime?        // <-- REQUIRED for OAuth
-  image         String?           // optional, used by Google
-  documents Document[]       @relation("OwnerDocuments")
-  access    DocumentAccess[]
-  accounts  Account[]
-  sessions  Session[]
+  id            String           @id @default(uuid())
+  name          String?
+  email         String?          @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  documents     Document[]       @relation("OwnerDocuments")
+  access        DocumentAccess[]
+  sessions      Session[]
 }
 
 model Account {
@@ -42,23 +42,24 @@ model Account {
 model Document {
   id        String           @id @default(uuid())
   title     String
-  type      String
   content   Bytes?
-  owner     User             @relation("OwnerDocuments", fields: [ownerId], references: [id])
-  ownerId   String
-  access    DocumentAccess[]
+  type      String
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
+  ownerId   String
+  owner     User             @relation("OwnerDocuments", fields: [ownerId], references: [id])
+  access    DocumentAccess[]
 }
 
 model DocumentAccess {
+  id         String   @id @default(uuid())
   userId     String
   documentId String
   permission String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   user       User     @relation(fields: [userId], references: [id])
-  document   Document @relation(fields: [documentId], references: [id])
 
-  @@id([userId, documentId])
+  @@unique([userId, documentId])
 }
 
 model Session {

@@ -1,12 +1,18 @@
-FROM node:20-bullseye
+# 1. Use Node 18 Alpine for the smallest, fastest container
+FROM node:18-alpine
 
+# 2. Set the working directory
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+# 3. Install the specific Yjs packages needed for the binary protocol
+RUN npm install y-websocket yjs
 
-# Copy websocket server files
-COPY server ./server
-
+# 4. Open the port for your browser to connect
 EXPOSE 1234
-CMD ["node", "server/websocket.js"]
+
+# 5. Set environment variables so the server is reachable outside Docker
+ENV HOST=0.0.0.0
+ENV PORT=1234
+
+# 6. Start the official Yjs binary server
+CMD ["npx", "y-websocket"]

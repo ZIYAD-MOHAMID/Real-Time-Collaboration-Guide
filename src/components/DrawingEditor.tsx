@@ -21,7 +21,6 @@ export function DrawingEditor({
   >("pen");
   const [currentColor, setCurrentColor] = useState("#3b82f6");
   const [lineWidth, setLineWidth] = useState(2);
-  const [showToolbar, setShowToolbar] = useState(true);
 
   const startPos = useRef({ x: 0, y: 0 });
   const lastPos = useRef({ x: 0, y: 0 });
@@ -147,12 +146,12 @@ export function DrawingEditor({
             startPos.current.x,
             startPos.current.y,
             x - startPos.current.x,
-            y - startPos.current.y
+            y - startPos.current.y,
           );
         } else {
           const radius = Math.hypot(
             x - startPos.current.x,
-            y - startPos.current.y
+            y - startPos.current.y,
           );
           ctx.beginPath();
           ctx.arc(
@@ -160,7 +159,7 @@ export function DrawingEditor({
             startPos.current.y,
             radius,
             0,
-            2 * Math.PI
+            2 * Math.PI,
           );
           ctx.stroke();
         }
@@ -188,7 +187,7 @@ export function DrawingEditor({
         } else {
           const radius = Math.hypot(
             endX - startPos.current.x,
-            endY - startPos.current.y
+            endY - startPos.current.y,
           );
           paths.push({
             type: "circle",
@@ -252,59 +251,54 @@ export function DrawingEditor({
 
   return (
     <div className="flex flex-col h-full">
-      {showToolbar && (
-        <div className="border-b bg-muted/30 px-4 py-2 flex flex-wrap items-center gap-2">
-          {/* Tools */}
-          {["pen", "eraser", "rectangle", "circle"].map((tool) => (
-            <Button
-              key={tool}
-              variant={currentTool === tool ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setCurrentTool(tool as any)}
-            >
-              {tool}
-            </Button>
-          ))}
-
-          {/* Colors */}
-          {colors.map((color) => (
-            <button
-              key={color}
-              onClick={() => setCurrentColor(color)}
-              style={{ backgroundColor: color }}
-              className={`w-6 h-6 rounded border-2 ${
-                currentColor === color ? "border-ring" : "border-border"
-              }`}
-            />
-          ))}
-
-          {/* Line width */}
-          <select
-            value={lineWidth}
-            onChange={(e) => setLineWidth(Number(e.target.value))}
-            className="border px-2 py-1 rounded text-xs"
+      <div className="border-b bg-muted/30 px-4 py-2 flex flex-wrap items-center gap-2">
+        {/* Tools */}
+        {["pen", "eraser", "rectangle", "circle"].map((tool) => (
+          <Button
+            key={tool}
+            variant={currentTool === tool ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setCurrentTool(tool as any)}
           >
-            {[1, 2, 4, 8].map((w) => (
-              <option key={w} value={w}>
-                {w}
-              </option>
-            ))}
-          </select>
+            {tool}
+          </Button>
+        ))}
 
-          <Button onClick={clearCanvas} size="sm">
-            Clear
-          </Button>
-          <Button onClick={exportCanvas} size="sm">
-            Export
-          </Button>
-          <Button onClick={onSave} size="sm" disabled={!onSave}>
-            Save
-          </Button>
-          <Button onClick={() => setShowToolbar(!showToolbar)} size="sm">
-            Toggle Toolbar
-          </Button>
-        </div>
-      )}
+        {/* Colors */}
+        {colors.map((color) => (
+          <button
+            key={color}
+            onClick={() => setCurrentColor(color)}
+            style={{ backgroundColor: color }}
+            className={`w-6 h-6 rounded border-2 ${
+              currentColor === color ? "border-ring" : "border-border"
+            }`}
+          />
+        ))}
+
+        {/* Line width */}
+        <select
+          value={lineWidth}
+          onChange={(e) => setLineWidth(Number(e.target.value))}
+          className="border px-2 py-1 rounded text-xs"
+        >
+          {[1, 2, 4, 8].map((w) => (
+            <option key={w} value={w}>
+              {w}
+            </option>
+          ))}
+        </select>
+
+        <Button onClick={clearCanvas} size="sm">
+          Clear
+        </Button>
+        <Button onClick={exportCanvas} size="sm">
+          Export
+        </Button>
+        <Button onClick={onSave} size="sm" disabled={!onSave}>
+          Save
+        </Button>
+      </div>
 
       <div className="flex-1 p-4">
         <canvas
@@ -319,8 +313,8 @@ export function DrawingEditor({
           {isSaving
             ? "Saving..."
             : lastSaved
-            ? `Saved at ${lastSaved.toLocaleTimeString()}`
-            : "Ready to draw"}
+              ? `Saved at ${lastSaved.toLocaleTimeString()}`
+              : "Ready to draw"}
         </span>
         <span>Auto-save enabled</span>
       </div>

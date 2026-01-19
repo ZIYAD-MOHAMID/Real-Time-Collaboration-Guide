@@ -56,7 +56,7 @@ export default function Dashboard() {
 
   const handleDocumentSelect = (
     documentId: string,
-    documentType: "planning" | "drawing" | "writing"
+    documentType: "planning" | "drawing" | "writing",
   ) => {
     setSelectedDocument({ id: documentId, type: documentType });
   };

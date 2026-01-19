@@ -99,6 +99,15 @@ const CREATE_DOCUMENT_MUTATION = gql`
         name
         email
       }
+      access {
+        id
+        permission
+        user {
+          id
+          name
+          email
+        }
+      }
     }
   }
 `;
@@ -112,7 +121,7 @@ const DELETE_DOCUMENT_MUTATION = gql`
 interface DocumentListProps {
   onDocumentSelect: (
     id: string,
-    type: "planning" | "drawing" | "writing"
+    type: "planning" | "drawing" | "writing",
   ) => void;
 }
 
@@ -157,32 +166,29 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
         }),
         cache: new InMemoryCache(),
       }),
-    [session?.user?.id]
+    [session?.user?.id],
   );
-
   const { data: myDocuments, refetch: refetchMyDocuments } = useQuery(
     GET_MY_DOCUMENTS,
     {
       skip: !session,
       client,
-    }
+    },
   ) as any;
-
   const { data: sharedDocuments, refetch: refetchSharedDocuments } = useQuery(
     GET_SHARED_DOCUMENTS,
     {
       skip: !session,
       client,
-    }
+    },
   ) as any;
-
   const { data: documentAccess, refetch: refetchDocumentAccess } = useQuery(
     GET_DOCUMENT_ACCESS,
     {
       variables: { documentId: shareDialog.documentId },
       skip: !shareDialog.documentId || !session,
       client,
-    }
+    },
   ) as any;
 
   const [createDocument] = useMutation(CREATE_DOCUMENT_MUTATION, { client });
@@ -190,45 +196,36 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
 
   const handleCreateDocument = async () => {
     if (!newDocumentTitle.trim()) return;
+    console.log(session);
 
     try {
-      const result = await createDocument({
+      await createDocument({
         variables: {
           title: newDocumentTitle,
           type: newDocumentType,
         },
+        refetchQueries: [
+          { query: GET_MY_DOCUMENTS },
+          { query: GET_SHARED_DOCUMENTS },
+        ],
+        // This ensures the headers are passed correctly
         context: {
           headers: {
-            "x-user-id": session?.user?.id || "",
+            "x-user-id": session?.user?.id,
           },
         },
       });
 
-      console.log("Document created successfully:", result);
-
       setNewDocumentTitle("");
       setShowCreateModal(false);
-
-      // Force refresh with a small delay
-      setTimeout(async () => {
-        console.log("Refreshing document list...");
-        await refetchMyDocuments();
-        await refetchSharedDocuments();
-        console.log("Document list refreshed");
-      }, 500);
+      console.log("✅ Document created and list refreshed");
     } catch (error) {
       console.error("Error creating document:", error);
-      // Even if there's an error, try to refresh
-      setTimeout(async () => {
-        await refetchMyDocuments();
-        await refetchSharedDocuments();
-      }, 500);
     }
   };
-
   const handleDeleteDocument = async (
     documentId: string,
-    documentTitle: string
+    documentTitle: string,
   ) => {
     // Show the modern delete confirmation modal
     setDeleteDialog({
@@ -329,11 +326,11 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
     console.log("Document ID being shared:", shareDialog.documentId);
     console.log(
       "Current myDocuments count:",
-      myDocuments?.myDocuments?.length || 0
+      myDocuments?.myDocuments?.length || 0,
     );
     console.log(
       "Current sharedDocuments count:",
-      sharedDocuments?.sharedDocuments?.length || 0
+      sharedDocuments?.sharedDocuments?.length || 0,
     );
 
     setTimeout(async () => {
@@ -344,11 +341,11 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
       console.log("=== REFETCH COMPLETE ===");
       console.log(
         "New myDocuments count:",
-        myDocuments?.myDocuments?.length || 0
+        myDocuments?.myDocuments?.length || 0,
       );
       console.log(
         "New sharedDocuments count:",
-        sharedDocuments?.sharedDocuments?.length || 0
+        sharedDocuments?.sharedDocuments?.length || 0,
       );
       console.log("Document list refreshed after sharing");
     }, 500);
@@ -455,7 +452,10 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
           <Button
             variant={activeTab === "shared" ? "default" : "ghost"}
             size="sm"
-            onClick={() => setActiveTab("shared")}
+            onClick={() => {
+              setActiveTab("shared");
+              refetchSharedDocuments();
+            }}
             className={`flex-1 rounded-lg transition-all duration-200 text-xs ${
               activeTab === "shared"
                 ? "bg-white dark:bg-slate-600 shadow-md text-slate-900 dark:text-white"
@@ -548,15 +548,23 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                         <div className="flex items-center space-x-2 mt-1">
                           <span
                             className={`text-xs px-3 py-1 rounded-full font-medium shadow-sm ${getDocumentColor(
-                              doc.type
+                              doc.type,
                             )}`}
                           >
                             {doc.type}
                           </span>
                           {activeTab === "shared" && (
-                            <span className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                              by {doc.owner.name || doc.owner.email}
-                            </span>
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold">
+                                {doc.owner?.name?.charAt(0) || "U"}
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                Owned by{" "}
+                                <span className="font-medium text-slate-700">
+                                  {doc.owner?.name || doc.owner?.email}
+                                </span>
+                              </span>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -637,7 +645,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                         {formatDate(doc.updatedAt)}
                       </span>
 
-                      {doc.access?.length > 0 && (
+                      {doc.access?.length > 1 && (
                         <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
                           <svg
                             className="w-4 h-4"
@@ -652,7 +660,7 @@ export function DocumentList({ onDocumentSelect }: DocumentListProps) {
                               d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
                             />
                           </svg>
-                          {doc.access.length} collaborators
+                          {doc.access.length - 1} collaborators
                         </span>
                       )}
                     </div>

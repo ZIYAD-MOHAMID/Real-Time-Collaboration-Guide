@@ -14,6 +14,8 @@ export class CRDTProvider {
   private changeCallbacks: (() => void)[] = [];
 
   private saveHandler: SaveHandler | null = null;
+  // Circuit breaker to prevent auto-save loops during initial data load
+  private isInitialLoading = false;
 
   constructor(documentId: string, userId: string) {
     this.documentId = documentId;
@@ -23,19 +25,26 @@ export class CRDTProvider {
     const WS_PORT = process.env.NEXT_PUBLIC_WS_PORT || "1234";
     const WEBSOCKET_URL = `ws://localhost:${WS_PORT}`;
 
-    this.provider = new WebsocketProvider(WEBSOCKET_URL, documentId, this.doc, {
-      connect: true,
-      params: { userId, room: documentId },
-      disableBc: true,
-      resyncInterval: 5000,
-      maxBackoffTime: 10000,
-    });
+    try {
+      this.provider = new WebsocketProvider(
+        WEBSOCKET_URL,
+        documentId,
+        this.doc,
+        {
+          connect: true,
+          params: { userId },
+          disableBc: true,
+        },
+      );
 
-    this.setupAwareness();
-    this.setupEvents();
-    this.setupYjsListeners();
+      this.setupAwareness();
+      this.setupEvents();
+      this.setupYjsListeners();
+    } catch (e) {
+      // If the provider fails, we catch it here so the UI doesn't crash
+      console.error("Yjs startup blocked to prevent crash");
+    }
   }
-
   /* ================= YJS ================= */
 
   private setupYjsListeners() {
@@ -93,7 +102,6 @@ export class CRDTProvider {
 
   /* ================= DATABASE SYNC ================= */
 
-  /** Register DB save function (called by UI once) */
   registerSaveHandler(handler: SaveHandler) {
     this.saveHandler = handler;
   }
@@ -101,30 +109,37 @@ export class CRDTProvider {
   getUpdate(): Uint8Array {
     return Y.encodeStateAsUpdate(this.doc);
   }
-
-  /** UI-safe auto save method ✅ */
   async syncWithDatabase() {
-    if (!this.saveHandler) {
-      console.warn("No save handler registered");
-      return;
-    }
+    // If we are currently applying an update from the database,
+    // DO NOT send a save request back.
+    if (!this.saveHandler || this.isInitialLoading) return;
 
     try {
       const update = Y.encodeStateAsUpdate(this.doc);
+
+      // Safety: Don't save if the document is empty
+      if (update.length < 10) return;
+
       await this.saveHandler(update);
-      console.log("CRDT synced with database");
+      console.log("✅ CRDT saved to DB");
     } catch (err) {
-      console.error("CRDT sync failed:", err);
-      throw err;
+      console.error("❌ CRDT sync failed:", err);
     }
   }
 
-  /** Apply DB update */
+  /** Apply DB update with loop protection */
   applyUpdate(update: Uint8Array) {
     if (!update || update.length < 4) return;
     try {
+      this.isInitialLoading = true;
       Y.applyUpdate(this.doc, update, "remote");
+
+      // Release the lock after Yjs has stabilized
+      setTimeout(() => {
+        this.isInitialLoading = false;
+      }, 100);
     } catch (err) {
+      this.isInitialLoading = false;
       console.error("Failed to apply Yjs update:", err);
     }
   }
@@ -165,8 +180,6 @@ export class CRDTProvider {
     };
   }
 
-  /* ================= UTILS ================= */
-
   private getUserColor(userId: string) {
     const colors = [
       "#ef4444",
@@ -178,8 +191,6 @@ export class CRDTProvider {
     ];
     return colors[userId.charCodeAt(0) % colors.length];
   }
-
-  /* ================= CLEANUP ================= */
 
   destroy() {
     this.provider.destroy();

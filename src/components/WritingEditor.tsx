@@ -19,7 +19,6 @@ export function WritingEditor({
   const [readingTime, setReadingTime] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fontSize, setFontSize] = useState("16");
-  const [showToolbar, setShowToolbar] = useState(true);
 
   // Update stats (words, chars, reading time)
   const updateStats = useCallback((text: string) => {
@@ -112,81 +111,72 @@ export function WritingEditor({
       }`}
     >
       {/* Toolbar */}
-      {showToolbar && (
-        <div className="border-b bg-muted/30 px-4 py-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center space-x-2">
-            <select
-              value={fontSize}
-              onChange={(e) => setFontSize(e.target.value)}
-              className="px-2 py-1 text-xs border border-input rounded"
-            >
-              {[12, 14, 16, 18, 20, 24].map((size) => (
-                <option key={size} value={size}>
-                  {size}px
-                </option>
-              ))}
-            </select>
+      <div className="border-b bg-muted/30 px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center space-x-2">
+          <select
+            value={fontSize}
+            onChange={(e) => setFontSize(e.target.value)}
+            className="px-2 py-1 text-xs border border-input rounded"
+          >
+            {[12, 14, 16, 18, 20, 24].map((size) => (
+              <option key={size} value={size}>
+                {size}px
+              </option>
+            ))}
+          </select>
 
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleFormat("uppercase")}
-              title="Uppercase"
-            >
-              Aa
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleFormat("lowercase")}
-              title="Lowercase"
-            >
-              aa
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleFormat("clear")}
-              title="Clear"
-            >
-              Clear
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={exportContent}
-              title="Export"
-            >
-              Export
-            </Button>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowToolbar(!showToolbar)}
-            >
-              Toggle Toolbar
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onSave}
-              disabled={!onSave}
-            >
-              Save
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsFullscreen(!isFullscreen)}
-            >
-              Fullscreen
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleFormat("uppercase")}
+            title="Uppercase"
+          >
+            Aa
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleFormat("lowercase")}
+            title="Lowercase"
+          >
+            aa
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleFormat("clear")}
+            title="Clear"
+          >
+            Clear
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={exportContent}
+            title="Export"
+          >
+            Export
+          </Button>
         </div>
-      )}
+
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={onSave}
+            disabled={!onSave}
+          >
+            Save
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+          >
+            Fullscreen
+          </Button>
+        </div>
+      </div>
 
       {/* Stats */}
       <div className="border-b bg-muted/20 px-4 py-1 flex justify-between text-xs text-muted-foreground">

@@ -22,7 +22,10 @@ export const handler = startServerAndCreateNextHandler(server, {
 
     try {
       // 1️⃣ x-user-id header
-      const xUserId = req.headers?.["x-user-id"];
+      const xUserId =
+        req.headers?.["x-user-id"] ||
+        req.headers?.get?.("x-user-id") ||
+        req.headers?.["X-User-Id"];
       if (xUserId) {
         session = {
           user: {
@@ -42,7 +45,9 @@ export const handler = startServerAndCreateNextHandler(server, {
           cookieName: "next-auth.session-token",
         });
         if (token) {
-          session = { user: { id: token.id, email: token.email, name: token.name } };
+          session = {
+            user: { id: token.id, email: token.email, name: token.name },
+          };
           console.log("Session from cookie token:", session);
         }
       }
@@ -60,7 +65,9 @@ export const handler = startServerAndCreateNextHandler(server, {
           secret: process.env.NEXTAUTH_SECRET,
         });
         if (token) {
-          session = { user: { id: token.id, email: token.email, name: token.name } };
+          session = {
+            user: { id: token.id, email: token.email, name: token.name },
+          };
           console.log("Session from auth header:", session);
         }
       }
